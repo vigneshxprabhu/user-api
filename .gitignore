@@ -1,0 +1,12 @@
+# Binaries
+*.exe
+*.exe~
+
+# Build output
+/bin/
+
+# Environment
+.env
+
+# VS Code
+.vscode/
