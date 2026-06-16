@@ -4,9 +4,10 @@ import (
 	//"fmt"
 	"user-api/internal/models"
 
-	"github.com/gofiber/fiber/v2"
-
 	"strconv"
+	"user-api/internal/service"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 var users = []models.User{
@@ -23,23 +24,30 @@ var users = []models.User{
 }
 
 func GetUsers(c *fiber.Ctx) error {
-	return c.JSON(users)
+
+	var responses []models.UserResponse
+
+	for _, user := range users {
+
+		age, err := service.CalculateAge(user.DOB)
+
+		if err != nil {
+			return c.Status(500).SendString("Failed to calculate age")
+		}
+		response := models.UserResponse{
+			ID:   user.ID,
+			Name: user.Name,
+			DOB:  user.DOB,
+			Age:  age,
+		}
+		responses = append(responses, response)
+	}
+	return c.JSON(responses)
 
 }
 
 func GetUserByID(c *fiber.Ctx) error {
-	// users := []models.User{
-	// 	{
-	// 		ID:   1,
-	// 		Name: "Alice",
-	// 		DOB:  "1990-05-10",
-	// 	},
-	// 	{
-	// 		ID:   2,
-	// 		Name: "Bob",
-	// 		DOB:  "1995-08-20",
-	// 	},
-	// }
+
 	id, err := strconv.Atoi(c.Params("id"))
 
 	if err != nil {
@@ -48,7 +56,18 @@ func GetUserByID(c *fiber.Ctx) error {
 
 	for _, user := range users {
 		if id == user.ID {
-			return c.JSON(user)
+			age, err := service.CalculateAge(user.DOB)
+
+			if err != nil {
+				return c.Status(500).SendString("Failed to calculate age")
+			}
+			response := models.UserResponse{
+				ID:   user.ID,
+				Name: user.Name,
+				DOB:  user.DOB,
+				Age:  age,
+			}
+			return c.JSON(response)
 		}
 
 	}
