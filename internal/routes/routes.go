@@ -8,4 +8,5 @@ import (
 
 func SetupRoutes(app *fiber.App) {
 	app.Get("/users", handler.GetUsers)
+	app.Get("/users/:id", handler.GetUserByID)
 }
