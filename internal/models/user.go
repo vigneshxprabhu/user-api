@@ -5,3 +5,8 @@ type User struct {
 	Name string `json:"name"`
 	DOB  string `json:"dob"`
 }
+
+type CreateUserRequest struct {
+	Name string `json:"name"`
+	DOB  string `json:"dob"`
+}
