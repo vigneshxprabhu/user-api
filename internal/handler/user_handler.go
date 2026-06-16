@@ -79,3 +79,33 @@ func CreateUser(c *fiber.Ctx) error {
 
 	return c.Status(201).JSON(newUser)
 }
+
+func UpdateUser(c *fiber.Ctx) error {
+
+	id, err := strconv.Atoi(c.Params("id"))
+
+	if err != nil {
+		return c.Status(400).SendString("Invalid ID")
+	}
+	var req models.CreateUserRequest
+
+	err = c.BodyParser(&req)
+
+	if err != nil {
+		return c.Status(400).SendString("Invalid Request")
+	}
+	if req.Name == "" || req.DOB == "" {
+		return c.Status(400).SendString("Name and DOB are required")
+	}
+
+	for i, user := range users {
+		if user.ID == id {
+			users[i].Name = req.Name
+			users[i].DOB = req.DOB
+
+			return c.JSON(users[i])
+		}
+
+	}
+	return c.Status(404).SendString("User not found")
+}
