@@ -40,7 +40,7 @@ func GetUserByID(c *fiber.Ctx) error {
 	// 		DOB:  "1995-08-20",
 	// 	},
 	// }
-	id, err := strconv.Atoi(c.Params("id")) // there 2 value  id and err because what is someone does user/abc instead of user/id
+	id, err := strconv.Atoi(c.Params("id"))
 
 	if err != nil {
 		return c.Status(400).SendString("Invalid ID")
@@ -108,4 +108,25 @@ func UpdateUser(c *fiber.Ctx) error {
 
 	}
 	return c.Status(404).SendString("User not found")
+}
+
+func DeleteUser(c *fiber.Ctx) error {
+
+	id, err := strconv.Atoi(c.Params("id"))
+
+	if err != nil {
+		return c.Status(400).SendString("Invalid ID")
+	}
+
+	for i, user := range users {
+
+		if user.ID == id {
+
+			users = append(users[:i], users[i+1:]...)
+
+			return c.SendStatus(204)
+		}
+	}
+	return c.Status(404).SendString("User not found")
+
 }
