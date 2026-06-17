@@ -40,3 +40,9 @@ func (r *UserRepository) UpdateUser(
 		params,
 	)
 }
+func (r *UserRepository) DeleteUser(id int32) error {
+	return r.Queries.DeleteUser(
+		context.Background(),
+		id,
+	)
+}

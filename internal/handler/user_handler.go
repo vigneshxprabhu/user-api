@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"user-api/internal/models"
 	"user-api/internal/repository"
+
 	//"user-api/internal/service"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	database "user-api/db/sqlc/generated"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 var users = []models.User{
@@ -87,55 +89,56 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).
 		JSON(user)
 }
-func UpdateUser(c *fiber.Ctx) error {
 
+func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid ID")
 	}
+
 	var req models.CreateUserRequest
 
-	err = c.BodyParser(&req)
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid request body")
+	}
+	dob, err := time.Parse("2006-01-02", req.DOB)
 
 	if err != nil {
-		return c.Status(400).SendString("Invalid Request")
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid DOB format")
 	}
-	if req.Name == "" || req.DOB == "" {
-		return c.Status(400).SendString("Name and DOB are required")
+	user, err := h.repo.UpdateUser(
+		database.UpdateUserParams{
+			ID:   int32(id),
+			Name: req.Name,
+			Dob:  dob,
+		},
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to update user")
 	}
-
-	for i, user := range users {
-		if user.ID == id {
-			users[i].Name = req.Name
-			users[i].DOB = req.DOB
-
-			return c.JSON(users[i])
-		}
-
-	}
-	return c.Status(404).SendString("User not found")
+	return c.JSON(user)
 }
 
-func DeleteUser(c *fiber.Ctx) error {
+func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
 
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid ID")
 	}
+	err = h.repo.DeleteUser(int32(id))
 
-	for i, user := range users {
-
-		if user.ID == id {
-
-			users = append(users[:i], users[i+1:]...)
-
-			return c.SendStatus(204)
-		}
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Delete failed")
 	}
-	return c.Status(404).SendString("User not found")
-
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 type UserHandler struct {
