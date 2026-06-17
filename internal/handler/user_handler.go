@@ -6,26 +6,13 @@ import (
 	"user-api/internal/models"
 	"user-api/internal/repository"
 
-	//"user-api/internal/service"
 	"time"
+	"user-api/internal/service"
 
 	database "user-api/db/sqlc/generated"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-var users = []models.User{
-	{
-		ID:   1,
-		Name: "Alice",
-		DOB:  "1990-05-10",
-	},
-	{
-		ID:   2,
-		Name: "Bob",
-		DOB:  "1995-08-20",
-	},
-}
 
 func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 
@@ -35,8 +22,24 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to fetch users")
 	}
 
-	return c.JSON(users)
+	var response []models.UserResponse
 
+	for _, user := range users {
+		age, err := service.CalculateAge(
+			user.Dob.Format("2006-01-02"),
+		)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).
+				SendString("Failed to calculate age")
+		}
+		response = append(response, models.UserResponse{
+			ID:   int(user.ID),
+			Name: user.Name,
+			DOB:  user.Dob.Format("2006-01-02"),
+			Age:  age,
+		})
+	}
+	return c.JSON(response)
 }
 
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
@@ -55,7 +58,23 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 			SendString("User not found")
 	}
 
-	return c.JSON(user)
+	age, err := service.CalculateAge(
+		user.Dob.Format("2006-01-02"),
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to calculate age")
+	}
+
+	response := models.UserResponse{
+		ID:   int(user.ID),
+		Name: user.Name,
+		DOB:  user.Dob.Format("2006-01-02"),
+		Age:  age,
+	}
+
+	return c.JSON(response)
 }
 
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
