@@ -11,8 +11,12 @@ import (
 
 	database "user-api/db/sqlc/generated"
 
+	"user-api/internal/logger"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+
+	"go.uber.org/zap"
 )
 
 func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
@@ -114,6 +118,10 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).
 			SendString("Failed to create user")
 	}
+	logger.Log.Info(
+		"User created",
+		zap.String("name", user.Name),
+	)
 
 	return c.Status(fiber.StatusCreated).
 		JSON(user)

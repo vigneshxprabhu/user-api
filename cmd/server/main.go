@@ -4,12 +4,14 @@ import (
 	"log"
 
 	"context"
-	"github.com/gofiber/fiber/v2"
 	"user-api/config"
 	database "user-api/db/sqlc/generated"
 	"user-api/internal/handler"
+	"user-api/internal/logger"
 	"user-api/internal/repository"
 	"user-api/internal/routes"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -28,6 +30,9 @@ func main() {
 
 	log.Println(users)
 	_ = queries
+
+	logger.Init()
+
 	app := fiber.New()
 
 	routes.SetupRoutes(app, userHandler)
