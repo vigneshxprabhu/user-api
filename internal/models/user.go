@@ -7,8 +7,8 @@ type User struct {
 }
 
 type CreateUserRequest struct {
-	Name string `json:"name"`
-	DOB  string `json:"dob"`
+	Name string `json:"name" validate:"required"`
+	DOB  string `json:"dob" validate:"required"`
 }
 
 type UserResponse struct {

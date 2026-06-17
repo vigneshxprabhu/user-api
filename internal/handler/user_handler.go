@@ -11,6 +11,7 @@ import (
 
 	database "user-api/db/sqlc/generated"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -85,8 +86,17 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).
 			SendString("Invalid request body")
 	}
-
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Validation failed")
+	}
 	dob, err := time.Parse("2006-01-02", req.DOB)
+
+	if dob.After(time.Now()) {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("DOB  cannot be in the future")
+	}
 
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
