@@ -97,14 +97,14 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 	dob, err := time.Parse("2006-01-02", req.DOB)
 
-	if dob.After(time.Now()) {
-		return c.Status(fiber.StatusBadRequest).
-			SendString("DOB  cannot be in the future")
-	}
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			SendString("Invalid DOB format")
+	}
+
+	if dob.After(time.Now()) {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("DOB  cannot be in the future")
 	}
 
 	user, err := h.repo.CreateUser(
@@ -120,11 +120,27 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 	logger.Log.Info(
 		"User created",
+		zap.Int32("id", user.ID),
 		zap.String("name", user.Name),
 	)
+	age, err := service.CalculateAge(
+		user.Dob.Format("2006-01-02"),
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to calculate age")
+	}
+
+	response := models.UserResponse{
+		ID:   int(user.ID),
+		Name: user.Name,
+		DOB:  user.Dob.Format("2006-01-02"),
+		Age:  age,
+	}
 
 	return c.Status(fiber.StatusCreated).
-		JSON(user)
+		JSON(response)
 }
 
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
@@ -141,11 +157,20 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).
 			SendString("Invalid request body")
 	}
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Validation failed")
+	}
 	dob, err := time.Parse("2006-01-02", req.DOB)
 
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).
 			SendString("Invalid DOB format")
+	}
+	if dob.After(time.Now()) {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("DOB  cannot be in the future")
 	}
 	user, err := h.repo.UpdateUser(
 		database.UpdateUserParams{
@@ -158,7 +183,28 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).
 			SendString("Failed to update user")
 	}
-	return c.JSON(user)
+	logger.Log.Info(
+		"User updated",
+		zap.Int32("id", user.ID),
+	)
+	age, err := service.CalculateAge(
+		user.Dob.Format("2006-01-02"),
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to calculate age")
+	}
+
+	response := models.UserResponse{
+		ID:   int(user.ID),
+		Name: user.Name,
+		DOB:  user.Dob.Format("2006-01-02"),
+		Age:  age,
+	}
+
+	return c.JSON(response)
+
 }
 
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
@@ -175,6 +221,10 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).
 			SendString("Delete failed")
 	}
+	logger.Log.Info(
+		"User deleted",
+		zap.Int32("id", int32(id)),
+	)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 

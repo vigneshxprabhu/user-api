@@ -8,6 +8,7 @@ import (
 	database "user-api/db/sqlc/generated"
 	"user-api/internal/handler"
 	"user-api/internal/logger"
+	"user-api/internal/middleware"
 	"user-api/internal/repository"
 	"user-api/internal/routes"
 
@@ -34,7 +35,7 @@ func main() {
 	logger.Init()
 
 	app := fiber.New()
-
+	app.Use(middleware.RequestLogger)
 	routes.SetupRoutes(app, userHandler)
 	log.Println("servver started on port 3000")
 
