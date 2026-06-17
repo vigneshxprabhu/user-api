@@ -2,12 +2,14 @@ package handler
 
 import (
 	//"fmt"
-	"user-api/internal/models"
-
 	"strconv"
-	"user-api/internal/service"
+	"user-api/internal/models"
+	"user-api/internal/repository"
+	//"user-api/internal/service"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	database "user-api/db/sqlc/generated"
 )
 
 var users = []models.User{
@@ -23,82 +25,68 @@ var users = []models.User{
 	},
 }
 
-func GetUsers(c *fiber.Ctx) error {
+func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 
-	var responses []models.UserResponse
+	users, err := h.repo.ListUsers()
 
-	for _, user := range users {
-
-		age, err := service.CalculateAge(user.DOB)
-
-		if err != nil {
-			return c.Status(500).SendString("Failed to calculate age")
-		}
-		response := models.UserResponse{
-			ID:   user.ID,
-			Name: user.Name,
-			DOB:  user.DOB,
-			Age:  age,
-		}
-		responses = append(responses, response)
+	if err != nil {
+		return c.Status(500).SendString("Failed to fetch users")
 	}
-	return c.JSON(responses)
+
+	return c.JSON(users)
 
 }
 
-func GetUserByID(c *fiber.Ctx) error {
+func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
 
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid ID")
 	}
 
-	for _, user := range users {
-		if id == user.ID {
-			age, err := service.CalculateAge(user.DOB)
-
-			if err != nil {
-				return c.Status(500).SendString("Failed to calculate age")
-			}
-			response := models.UserResponse{
-				ID:   user.ID,
-				Name: user.Name,
-				DOB:  user.DOB,
-				Age:  age,
-			}
-			return c.JSON(response)
-		}
-
-	}
-	return c.Status(404).SendString("User not found")
-
-}
-
-func CreateUser(c *fiber.Ctx) error {
-	var req models.CreateUserRequest
-
-	err := c.BodyParser(&req)
+	user, err := h.repo.GetUser(int32(id))
 
 	if err != nil {
-		return c.Status(400).SendString("Invalid Request")
+		return c.Status(fiber.StatusNotFound).
+			SendString("User not found")
 	}
 
-	if req.Name == "" || req.DOB == "" {
-		return c.Status(400).SendString("Name and DOB are required")
-	}
-
-	newUser := models.User{
-		ID:   len(users) + 1,
-		Name: req.Name,
-		DOB:  req.DOB,
-	}
-
-	users = append(users, newUser)
-
-	return c.Status(201).JSON(newUser)
+	return c.JSON(user)
 }
 
+func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+
+	var req models.CreateUserRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid request body")
+	}
+
+	dob, err := time.Parse("2006-01-02", req.DOB)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("Invalid DOB format")
+	}
+
+	user, err := h.repo.CreateUser(
+		database.CreateUserParams{
+			Name: req.Name,
+			Dob:  dob,
+		},
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to create user")
+	}
+
+	return c.Status(fiber.StatusCreated).
+		JSON(user)
+}
 func UpdateUser(c *fiber.Ctx) error {
 
 	id, err := strconv.Atoi(c.Params("id"))
@@ -148,4 +136,14 @@ func DeleteUser(c *fiber.Ctx) error {
 	}
 	return c.Status(404).SendString("User not found")
 
+}
+
+type UserHandler struct {
+	repo *repository.UserRepository
+}
+
+func NewUserHandler(repo *repository.UserRepository) *UserHandler {
+	return &UserHandler{
+		repo: repo,
+	}
 }
