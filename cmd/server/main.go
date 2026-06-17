@@ -35,6 +35,7 @@ func main() {
 	logger.Init()
 
 	app := fiber.New()
+	app.Use(middleware.RequestID)
 	app.Use(middleware.RequestLogger)
 	routes.SetupRoutes(app, userHandler)
 	log.Println("servver started on port 3000")

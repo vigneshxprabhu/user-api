@@ -1,0 +1,15 @@
+package middleware
+
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+)
+
+func RequestID(c *fiber.Ctx) error {
+
+	requestID := uuid.New().String()
+
+	c.Set("X-Request-ID", requestID)
+
+	return c.Next()
+}
