@@ -46,3 +46,16 @@ func (r *UserRepository) DeleteUser(id int32) error {
 		id,
 	)
 }
+func (r *UserRepository) ListUsersPaginated(
+	limit int32,
+	offset int32,
+) ([]database.User, error) {
+
+	return r.Queries.ListUsersPaginated(
+		context.Background(),
+		database.ListUsersPaginatedParams{
+			Limit:  limit,
+			Offset: offset,
+		},
+	)
+}

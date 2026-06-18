@@ -21,7 +21,15 @@ import (
 
 func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 
-	users, err := h.repo.ListUsers()
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "5"))
+
+	offset := (page - 1) * limit
+
+	users, err := h.repo.ListUsersPaginated(
+		int32(limit),
+		int32(offset),
+	)
 
 	if err != nil {
 		return c.Status(500).SendString("Failed to fetch users")
