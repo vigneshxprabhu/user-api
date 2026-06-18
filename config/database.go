@@ -2,15 +2,23 @@ package config
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq"
 	"log"
+	"os"
+
+	_ "github.com/lib/pq"
 )
 
 func ConnectDB() *sql.DB {
 
+	connStr := os.Getenv("DATABASE_URL")
+
+	if connStr == "" {
+		connStr = "postgres://postgres:yolo123@localhost:5432/user_api?sslmode=disable"
+	}
+
 	db, err := sql.Open(
 		"postgres",
-		"postgres://postgres:yolo123@localhost:5432/user_api?sslmode=disable",
+		connStr,
 	)
 
 	if err != nil {

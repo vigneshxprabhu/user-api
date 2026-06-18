@@ -12,6 +12,7 @@ services:
     build: .
     depends_on:
       - postgres
+    restart: on-failure
     environment:
       DATABASE_URL: postgres://postgres:yolo123@postgres:5432/user_api?sslmode=disable
     ports:
